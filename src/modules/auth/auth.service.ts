@@ -116,6 +116,7 @@ export const refresh = async (rawToken: string, ip?: string, userAgent?: string)
   }
 
   if (!matched) {
+    await writeAudit(null, 'REFRESH_TOKEN_NOT_FOUND', undefined, { ip, userAgent });
     throw new AppError(401, 'INVALID_REFRESH_TOKEN', 'Invalid refresh token');
   }
 

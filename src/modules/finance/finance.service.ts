@@ -1,4 +1,4 @@
-import { prisma } from '../../config/prisma.js';
+import * as repo from './finance.repository.js';
 
 interface MonthlyReport {
   month: string;
@@ -22,34 +22,13 @@ export const getOverview = async () => {
     expensesByCategory,
     orderCounts,
   ] = await Promise.all([
-    prisma.order.aggregate({
-      where: { status: 'DELIVERED' },
-      _sum: { totalAmount: true },
-    }),
-    prisma.order.aggregate({
-      where: { status: 'DELIVERED', createdAt: { gte: thisMonthStart } },
-      _sum: { totalAmount: true },
-    }),
-    prisma.order.aggregate({
-      where: { status: 'DELIVERED', createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
-      _sum: { totalAmount: true },
-    }),
-    prisma.$queryRaw<{ cogs: bigint | null }[]>`
-      SELECT COALESCE(SUM(oi.quantity * pv."costPrice"), 0) AS cogs
-      FROM "OrderItem" oi
-      JOIN "ProductVariant" pv ON oi."variantId" = pv.id
-      JOIN "Order" o ON oi."orderId" = o.id
-      WHERE o.status = 'DELIVERED'
-    `,
-    prisma.expense.aggregate({ _sum: { amount: true } }),
-    prisma.expense.groupBy({
-      by: ['category'],
-      _sum: { amount: true },
-    }),
-    prisma.order.groupBy({
-      by: ['status'],
-      _count: true,
-    }),
+    repo.aggregateDeliveredRevenue(),
+    repo.aggregateDeliveredRevenue({ gte: thisMonthStart }),
+    repo.aggregateDeliveredRevenue({ gte: lastMonthStart, lte: lastMonthEnd }),
+    repo.aggregateCogs(),
+    repo.aggregateExpenses(),
+    repo.groupExpensesByCategory(),
+    repo.groupOrdersByStatus(),
   ]);
 
   const revenue = {
@@ -91,24 +70,10 @@ export const getOverview = async () => {
 };
 
 export const getMonthlyReport = async (year: number): Promise<MonthlyReport[]> => {
-  const revenueByMonth = await prisma.$queryRaw<{ month: string; revenue: bigint }[]>`
-    SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month,
-           COALESCE(SUM("totalAmount"), 0) AS revenue
-    FROM "Order"
-    WHERE status = 'DELIVERED'
-      AND EXTRACT(YEAR FROM "createdAt") = ${year}
-    GROUP BY month
-    ORDER BY month
-  `;
-
-  const expensesByMonth = await prisma.$queryRaw<{ month: string; expenses: bigint }[]>`
-    SELECT to_char(date_trunc('month', date), 'YYYY-MM') AS month,
-           COALESCE(SUM(amount), 0) AS expenses
-    FROM "Expense"
-    WHERE EXTRACT(YEAR FROM date) = ${year}
-    GROUP BY month
-    ORDER BY month
-  `;
+  const [revenueData, expensesData] = await Promise.all([
+    repo.revenueByMonth(year),
+    repo.expensesByMonth(year),
+  ]);
 
   const months = new Map<string, { revenue: number; expenses: number }>();
 
@@ -117,12 +82,12 @@ export const getMonthlyReport = async (year: number): Promise<MonthlyReport[]> =
     months.set(key, { revenue: 0, expenses: 0 });
   }
 
-  for (const row of revenueByMonth) {
+  for (const row of revenueData) {
     const entry = months.get(row.month);
     if (entry) entry.revenue = Number(row.revenue);
   }
 
-  for (const row of expensesByMonth) {
+  for (const row of expensesData) {
     const entry = months.get(row.month);
     if (entry) entry.expenses = Number(row.expenses);
   }

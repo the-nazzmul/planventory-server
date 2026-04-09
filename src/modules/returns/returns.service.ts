@@ -39,6 +39,24 @@ export const processReturn = async (data: CreateReturnInput, processedBy: string
     throw new AppError(400, 'INVALID_ORDER_STATUS', 'Returns can only be processed for DELIVERED orders');
   }
 
+  for (const returnItem of data.items) {
+    const orderLine = order.items.find((oi) => oi.variantId === returnItem.variantId);
+    if (!orderLine) {
+      throw new AppError(
+        400,
+        'INVALID_RETURN_ITEM',
+        `Variant ${returnItem.variantId} was not part of this order`,
+      );
+    }
+    if (returnItem.quantity > orderLine.quantity) {
+      throw new AppError(
+        400,
+        'RETURN_QTY_EXCEEDS_ORDER',
+        `Return quantity (${returnItem.quantity}) exceeds ordered quantity (${orderLine.quantity}) for variant ${returnItem.variantId}`,
+      );
+    }
+  }
+
   return prisma.$transaction(async (tx) => {
     const returnRecord = await tx.return.create({
       data: {

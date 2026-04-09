@@ -25,15 +25,6 @@ export const overviewHandler = async (req: Request, res: Response, next: NextFun
 export const reportsHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const year = parseInt(req.query.year as string, 10) || new Date().getFullYear();
-    const period = (req.query.period as string) || 'monthly';
-
-    if (period !== 'monthly') {
-      res.status(400).json({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Only period=monthly is supported' },
-      });
-      return;
-    }
 
     const report = await service.getMonthlyReport(year);
 

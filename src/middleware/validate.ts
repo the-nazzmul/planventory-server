@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { ZodTypeAny, infer as ZodInfer } from 'zod';
+import type { ZodTypeAny } from 'zod';
 import { sendError } from '../shared/utils/response.js';
 
 export const validate = (schema: ZodTypeAny) => {
@@ -15,8 +15,16 @@ export const validate = (schema: ZodTypeAny) => {
       return;
     }
 
-    const validated = result.data as { body?: unknown };
-    req.body = validated.body;
+    const validated = result.data as {
+      body?: Record<string, unknown>;
+      query?: Record<string, unknown>;
+      params?: Record<string, unknown>;
+    };
+
+    if (validated.body !== undefined) req.body = validated.body;
+    if (validated.query !== undefined) Object.assign(req.query, validated.query);
+    if (validated.params !== undefined) Object.assign(req.params, validated.params as Record<string, string>);
+
     next();
   };
 };

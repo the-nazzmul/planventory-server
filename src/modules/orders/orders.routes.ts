@@ -13,10 +13,13 @@ import { createOrderSchema, getOrdersQuerySchema, updateOrderStatusSchema } from
 
 export const ordersRouter = Router();
 
-ordersRouter.use(authenticate, authorize('SUPER_ADMIN', 'MANAGER'));
+ordersRouter.use(authenticate);
 
-ordersRouter.get('/', validate(getOrdersQuerySchema), getAllHandler);
-ordersRouter.get('/:id', getByIdHandler);
-ordersRouter.post('/', validate(createOrderSchema), createHandler);
-ordersRouter.patch('/:id/status', validate(updateOrderStatusSchema), updateStatusHandler);
-ordersRouter.get('/:id/items', getItemsHandler);
+const adminOrManager = authorize('SUPER_ADMIN', 'MANAGER');
+const allRoles = authorize('SUPER_ADMIN', 'MANAGER', 'WAREHOUSE');
+
+ordersRouter.get('/', allRoles, validate(getOrdersQuerySchema), getAllHandler);
+ordersRouter.get('/:id', allRoles, getByIdHandler);
+ordersRouter.post('/', adminOrManager, validate(createOrderSchema), createHandler);
+ordersRouter.patch('/:id/status', allRoles, validate(updateOrderStatusSchema), updateStatusHandler);
+ordersRouter.get('/:id/items', allRoles, getItemsHandler);

@@ -1,20 +1,21 @@
 import type { NextFunction, Request, Response } from 'express';
+import { env } from '../../config/env.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { sendSuccess } from '../../shared/utils/response.js';
 import { changePassword, login, logout, refresh } from './auth.service.js';
 
-const cookieOptions = {
+const cookieOptions = () => ({
   httpOnly: true,
   secure: true,
   sameSite: 'strict' as const,
-  maxAge: 30 * 24 * 60 * 60 * 1000,
-};
+  maxAge: env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
+});
 
 export const loginHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const result = await login(req.body.email, req.body.password, req.ip, req.get('user-agent'));
 
-    res.cookie('refreshToken', result.refreshToken, cookieOptions);
+    res.cookie('refreshToken', result.refreshToken, cookieOptions());
     sendSuccess(
       res,
       {
@@ -42,7 +43,7 @@ export const refreshHandler = async (
 
     const result = await refresh(rawToken, req.ip, req.get('user-agent'));
 
-    res.cookie('refreshToken', result.refreshToken, cookieOptions);
+    res.cookie('refreshToken', result.refreshToken, cookieOptions());
     sendSuccess(res, { accessToken: result.accessToken });
   } catch (error) {
     next(error);
@@ -59,7 +60,7 @@ export const logoutHandler = async (req: Request, res: Response, next: NextFunct
 
     await logout(rawToken, req.user.id, req.ip, req.get('user-agent'));
 
-    res.clearCookie('refreshToken', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions());
     sendSuccess(res, { loggedOut: true });
   } catch (error) {
     next(error);
