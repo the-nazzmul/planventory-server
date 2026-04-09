@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
+import { idParamSchema } from '../../shared/schemas/common.js';
 import {
   createHandler,
   getAllHandler,
@@ -19,7 +20,7 @@ const adminOrManager = authorize('SUPER_ADMIN', 'MANAGER');
 const allRoles = authorize('SUPER_ADMIN', 'MANAGER', 'WAREHOUSE');
 
 ordersRouter.get('/', allRoles, validate(getOrdersQuerySchema), getAllHandler);
-ordersRouter.get('/:id', allRoles, getByIdHandler);
+ordersRouter.get('/:id', allRoles, validate(idParamSchema), getByIdHandler);
 ordersRouter.post('/', adminOrManager, validate(createOrderSchema), createHandler);
 ordersRouter.patch('/:id/status', allRoles, validate(updateOrderStatusSchema), updateStatusHandler);
-ordersRouter.get('/:id/items', allRoles, getItemsHandler);
+ordersRouter.get('/:id/items', allRoles, validate(idParamSchema), getItemsHandler);

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
+import { idParamSchema, twoIdParamSchema } from '../../shared/schemas/common.js';
 import {
   addImageHandler,
   addVariantHandler,
@@ -34,10 +35,10 @@ const adminOrManager = authorize('SUPER_ADMIN', 'MANAGER');
 const allRoles = authorize('SUPER_ADMIN', 'MANAGER', 'WAREHOUSE');
 
 productsRouter.get('/', allRoles, validate(getProductsQuerySchema), getAllHandler);
-productsRouter.get('/:id', allRoles, getByIdHandler);
+productsRouter.get('/:id', allRoles, validate(idParamSchema), getByIdHandler);
 productsRouter.post('/', adminOrManager, validate(createProductSchema), createHandler);
 productsRouter.patch('/:id', adminOrManager, validate(updateProductSchema), updateHandler);
-productsRouter.delete('/:id', adminOrManager, softDeleteHandler);
+productsRouter.delete('/:id', adminOrManager, validate(idParamSchema), softDeleteHandler);
 
 productsRouter.post('/:id/variants', adminOrManager, validate(createVariantSchema), addVariantHandler);
 productsRouter.patch('/:id/variants/:variantId', adminOrManager, validate(updateVariantSchema), updateVariantHandler);
@@ -45,4 +46,4 @@ productsRouter.patch('/:id/variants/:variantId/stock', allRoles, validate(update
 
 productsRouter.get('/:id/presigned-upload', adminOrManager, validate(presignedUploadQuerySchema), presignedUploadHandler);
 productsRouter.post('/:id/images', adminOrManager, validate(addImageSchema), addImageHandler);
-productsRouter.delete('/:id/images/:imageId', adminOrManager, removeImageHandler);
+productsRouter.delete('/:id/images/:imageId', adminOrManager, validate(twoIdParamSchema('imageId')), removeImageHandler);

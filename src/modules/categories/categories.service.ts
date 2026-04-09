@@ -44,9 +44,9 @@ export const update = async (id: string, data: { name?: string; parentId?: strin
 
 export const remove = async (id: string) => {
   await getById(id);
-  const count = await repo.countProducts(id);
+  const count = await repo.countProductsInTree(id);
   if (count > 0) {
-    throw new AppError(409, 'CATEGORY_HAS_PRODUCTS', 'Cannot delete category with linked products');
+    throw new AppError(409, 'CATEGORY_HAS_PRODUCTS', 'Cannot delete category with linked products (including descendants)');
   }
   return repo.remove(id);
 };

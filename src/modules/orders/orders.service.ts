@@ -141,6 +141,11 @@ export const updateStatus = async (
   processedBy?: string,
 ) => {
   const order = await getById(id);
+
+  if (status === 'REFUNDED') {
+    throw new AppError(400, 'USE_RETURNS_FLOW', 'REFUNDED status can only be set through the returns endpoint');
+  }
+
   validateTransition(order.status, status);
 
   if (status === 'SHIPPED' && !trackingNumber) {

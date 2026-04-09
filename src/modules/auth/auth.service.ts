@@ -182,6 +182,7 @@ export const changePassword = async (
   const validCurrentPassword = await verifyPassword(user.passwordHash, currentPassword);
 
   if (!validCurrentPassword) {
+    await writeAudit(userId, 'CHANGE_PASSWORD_FAILED', userId, { ip, userAgent });
     throw new AppError(401, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
   }
 

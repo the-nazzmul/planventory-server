@@ -1,5 +1,6 @@
 import type { Prisma, StockMovementReason } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
+import { AppError } from '../../shared/errors/AppError.js';
 
 interface FindAllFilters {
   cursor?: string | undefined;
@@ -131,10 +132,22 @@ export const updateStock = async (
   notes?: string,
 ) => {
   return prisma.$transaction(async (tx) => {
-    const variant = await tx.productVariant.update({
-      where: { id: variantId },
-      data: { stock: { increment: quantity } },
-    });
+    if (quantity < 0) {
+      const result: { id: string }[] = await tx.$queryRaw`
+        UPDATE "ProductVariant"
+        SET stock = stock + ${quantity}
+        WHERE id = ${variantId} AND stock >= ${-quantity}
+        RETURNING id
+      `;
+      if (result.length === 0) {
+        throw new AppError(409, 'INSUFFICIENT_STOCK', 'Insufficient stock for this adjustment');
+      }
+    } else {
+      await tx.productVariant.update({
+        where: { id: variantId },
+        data: { stock: { increment: quantity } },
+      });
+    }
 
     await tx.stockMovement.create({
       data: {
@@ -146,7 +159,7 @@ export const updateStock = async (
       },
     });
 
-    return variant;
+    return tx.productVariant.findUniqueOrThrow({ where: { id: variantId } });
   });
 };
 

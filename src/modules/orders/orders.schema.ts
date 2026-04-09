@@ -28,7 +28,7 @@ export const createOrderSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   body: z.object({
-    status: z.enum(['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
+    status: z.enum(['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']),
     trackingNumber: z.string().optional(),
   }),
   query: z.object({}).passthrough(),

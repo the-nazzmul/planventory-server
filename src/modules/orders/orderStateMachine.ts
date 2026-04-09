@@ -6,7 +6,7 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   CONFIRMED: ['PROCESSING', 'CANCELLED'],
   PROCESSING: ['SHIPPED', 'CANCELLED'],
   SHIPPED: ['DELIVERED'],
-  DELIVERED: ['REFUNDED'],
+  DELIVERED: [],
   CANCELLED: [],
   REFUNDED: [],
 };

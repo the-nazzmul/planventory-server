@@ -42,3 +42,24 @@ export const remove = (id: string) => {
 export const countProducts = (id: string) => {
   return prisma.product.count({ where: { categoryId: id } });
 };
+
+export const findDescendantIds = async (id: string): Promise<string[]> => {
+  const children = await prisma.category.findMany({
+    where: { parentId: id },
+    select: { id: true },
+  });
+
+  const ids: string[] = [];
+  for (const child of children) {
+    ids.push(child.id);
+    const grandchildren = await findDescendantIds(child.id);
+    ids.push(...grandchildren);
+  }
+  return ids;
+};
+
+export const countProductsInTree = async (id: string) => {
+  const descendantIds = await findDescendantIds(id);
+  const allIds = [id, ...descendantIds];
+  return prisma.product.count({ where: { categoryId: { in: allIds } } });
+};

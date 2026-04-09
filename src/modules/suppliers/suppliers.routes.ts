@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
+import { idParamSchema } from '../../shared/schemas/common.js';
 import {
   createHandler,
   getAllHandler,
@@ -16,7 +17,7 @@ export const suppliersRouter = Router();
 suppliersRouter.use(authenticate, authorize('SUPER_ADMIN', 'MANAGER'));
 
 suppliersRouter.get('/', getAllHandler);
-suppliersRouter.get('/:id', getByIdHandler);
+suppliersRouter.get('/:id', validate(idParamSchema), getByIdHandler);
 suppliersRouter.post('/', validate(createSupplierSchema), createHandler);
 suppliersRouter.patch('/:id', validate(updateSupplierSchema), updateHandler);
-suppliersRouter.delete('/:id', softDeleteHandler);
+suppliersRouter.delete('/:id', validate(idParamSchema), softDeleteHandler);

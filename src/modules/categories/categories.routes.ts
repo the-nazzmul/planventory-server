@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
+import { idParamSchema } from '../../shared/schemas/common.js';
 import {
   createHandler,
   getAllHandler,
@@ -16,7 +17,7 @@ export const categoriesRouter = Router();
 categoriesRouter.use(authenticate, authorize('SUPER_ADMIN', 'MANAGER'));
 
 categoriesRouter.get('/', getAllHandler);
-categoriesRouter.get('/:id', getByIdHandler);
+categoriesRouter.get('/:id', validate(idParamSchema), getByIdHandler);
 categoriesRouter.post('/', validate(createCategorySchema), createHandler);
 categoriesRouter.patch('/:id', validate(updateCategorySchema), updateHandler);
-categoriesRouter.delete('/:id', removeHandler);
+categoriesRouter.delete('/:id', validate(idParamSchema), removeHandler);
