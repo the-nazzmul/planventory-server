@@ -15,6 +15,7 @@ import {
   findUserByEmail,
   findUserById,
   listActiveRefreshTokens,
+  listRevokedRefreshTokens,
   revokeAllForUser,
   revokeFamily,
   revokeRefreshToken,
@@ -91,6 +92,17 @@ export const login = async (email: string, password: string, ip?: string, userAg
 };
 
 export const refresh = async (rawToken: string, ip?: string, userAgent?: string) => {
+  // First check revoked tokens — reuse of a revoked token means theft; revoke entire family
+  const revokedTokens = await listRevokedRefreshTokens();
+  for (const revokedRecord of revokedTokens) {
+    const isReused = await verifyToken(revokedRecord.tokenHash, rawToken);
+    if (isReused) {
+      await revokeFamily(revokedRecord.family);
+      await writeAudit(revokedRecord.userId, 'REFRESH_TOKEN_REUSE_DETECTED', revokedRecord.id, { ip, userAgent });
+      throw new AppError(401, 'TOKEN_REUSE_DETECTED', 'Refresh token reuse detected — all sessions revoked');
+    }
+  }
+
   const activeTokens = await listActiveRefreshTokens();
 
   let matched: (typeof activeTokens)[number] | null = null;
@@ -134,7 +146,7 @@ export const refresh = async (rawToken: string, ip?: string, userAgent?: string)
   };
 };
 
-export const logout = async (rawToken: string, userId: string): Promise<void> => {
+export const logout = async (rawToken: string, userId: string, ip?: string, userAgent?: string): Promise<void> => {
   const activeTokens = await listActiveRefreshTokens();
 
   for (const tokenRecord of activeTokens) {
@@ -145,7 +157,7 @@ export const logout = async (rawToken: string, userId: string): Promise<void> =>
     const matches = await verifyToken(tokenRecord.tokenHash, rawToken);
     if (matches) {
       await revokeFamily(tokenRecord.family);
-      await writeAudit(userId, 'LOGOUT', tokenRecord.id, {});
+      await writeAudit(userId, 'LOGOUT', tokenRecord.id, { ip, userAgent });
       return;
     }
   }
@@ -157,6 +169,8 @@ export const changePassword = async (
   userId: string,
   currentPassword: string,
   newPassword: string,
+  ip?: string,
+  userAgent?: string,
 ): Promise<void> => {
   const user = await findUserById(userId);
 
@@ -174,5 +188,5 @@ export const changePassword = async (
 
   await updatePassword(userId, newPasswordHash);
   await revokeAllForUser(userId);
-  await writeAudit(userId, 'PASSWORD_CHANGED', userId, {});
+  await writeAudit(userId, 'PASSWORD_CHANGED', userId, { ip, userAgent });
 };

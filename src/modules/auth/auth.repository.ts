@@ -29,10 +29,14 @@ export const findRefreshToken = (tokenHash: string) => {
 
 export const listActiveRefreshTokens = () => {
   return prisma.refreshToken.findMany({
-    where: {
-      revokedAt: null,
-    },
+    where: { revokedAt: null },
     include: { user: true },
+  });
+};
+
+export const listRevokedRefreshTokens = () => {
+  return prisma.refreshToken.findMany({
+    where: { revokedAt: { not: null } },
   });
 };
 

@@ -23,7 +23,21 @@ const main = async (): Promise<void> => {
     },
   });
 
-  console.log('Seed completed: SUPER_ADMIN user created');
+  const defaultSettings: { key: string; value: string | number }[] = [
+    { key: 'low_stock_threshold', value: 10 },
+    { key: 'tax_rate', value: 0 },
+    { key: 'currency_code', value: 'USD' },
+  ];
+
+  for (const setting of defaultSettings) {
+    await prisma.setting.upsert({
+      where: { key: setting.key },
+      update: {},
+      create: { key: setting.key, value: setting.value },
+    });
+  }
+
+  console.log('Seed completed: SUPER_ADMIN user and default settings created');
 };
 
 main()

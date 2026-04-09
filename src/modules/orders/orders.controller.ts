@@ -23,8 +23,8 @@ export const getByIdHandler = async (req: Request, res: Response, next: NextFunc
 
 export const createHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const order = await service.create(req.body, req.user?.id);
-    sendSuccess(res, order, 201);
+    const { order, isExisting } = await service.create(req.body, req.user?.id);
+    sendSuccess(res, order, isExisting ? 200 : 201);
   } catch (error) {
     next(error);
   }

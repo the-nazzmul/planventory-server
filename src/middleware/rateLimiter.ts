@@ -62,3 +62,12 @@ export const authLimiter = rateLimit({
   message: errorResponse,
   store: new UpstashRateLimitStore('rl:auth:', redis),
 });
+
+export const financeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: errorResponse,
+  store: new UpstashRateLimitStore('rl:finance:', redis),
+});

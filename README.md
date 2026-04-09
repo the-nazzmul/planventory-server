@@ -61,17 +61,17 @@ All endpoints are prefixed with `/api/v1`.
 | POST | /auth/logout | Bearer | Logout |
 | PATCH | /auth/change-password | Bearer | Change password |
 | GET/POST/PATCH/DELETE | /users | SUPER_ADMIN | User management |
-| GET/POST/PATCH/DELETE | /categories | ADMIN/MANAGER | Category CRUD |
-| GET/POST/PATCH/DELETE | /brands | ADMIN/MANAGER | Brand CRUD |
-| GET/POST/PATCH/DELETE | /products | ADMIN/MANAGER | Product CRUD |
+| GET/POST/PATCH/DELETE | /categories | SUPER_ADMIN/MANAGER | Category CRUD |
+| GET/POST/PATCH/DELETE | /brands | SUPER_ADMIN/MANAGER | Brand CRUD |
+| GET/POST/PATCH/DELETE | /products | SUPER_ADMIN/MANAGER | Product CRUD |
 | PATCH | /products/:id/variants/:vid/stock | +WAREHOUSE | Stock update |
 | GET | /stock-movements | All roles | Stock movement log |
-| GET/POST/PATCH/DELETE | /suppliers | ADMIN/MANAGER | Supplier CRUD |
-| GET/POST/PATCH | /purchase-orders | ADMIN/MANAGER | Purchase orders |
-| POST | /purchase-orders/:id/receive | ADMIN/MANAGER | Receive PO |
-| GET/POST | /orders | ADMIN/MANAGER | Order management |
-| PATCH | /orders/:id/status | ADMIN/MANAGER | Update order status |
-| GET/POST | /returns | ADMIN/MANAGER | Return processing |
+| GET/POST/PATCH/DELETE | /suppliers | SUPER_ADMIN/MANAGER | Supplier CRUD |
+| GET/POST/PATCH | /purchase-orders | SUPER_ADMIN/MANAGER | Purchase orders |
+| POST | /purchase-orders/:id/receive | SUPER_ADMIN/MANAGER | Receive PO |
+| GET/POST | /orders | SUPER_ADMIN/MANAGER | Order management |
+| PATCH | /orders/:id/status | SUPER_ADMIN/MANAGER | Update order status |
+| GET/POST | /returns | SUPER_ADMIN/MANAGER | Return processing |
 | GET/POST | /expenses | SUPER_ADMIN | Expense ledger |
 | GET | /finance/overview | SUPER_ADMIN | Financial overview |
 | GET | /finance/reports | SUPER_ADMIN | Monthly reports |

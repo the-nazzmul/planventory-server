@@ -1,4 +1,5 @@
 import type { OrderStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { generateOrderNumber } from '../../shared/utils/orderNumber.js';
@@ -36,13 +37,14 @@ export const getItems = (orderId: string) => {
   return repo.findItemsByOrderId(orderId);
 };
 
-export const create = async (data: CreateOrderInput, processedBy?: string) => {
+export const create = async (data: CreateOrderInput, processedBy?: string): Promise<{ order: NonNullable<Awaited<ReturnType<typeof repo.findByIdempotencyKey>>>; isExisting: boolean }> => {
   const existing = await repo.findByIdempotencyKey(data.idempotencyKey);
   if (existing) {
-    return existing;
+    return { order: existing, isExisting: true };
   }
 
-  return prisma.$transaction(async (tx) => {
+  try {
+    const order = await prisma.$transaction(async (tx) => {
     const variants = await tx.productVariant.findMany({
       where: { id: { in: data.items.map((i) => i.variantId) } },
     });
@@ -119,7 +121,17 @@ export const create = async (data: CreateOrderInput, processedBy?: string) => {
     });
 
     return order;
-  });
+    });
+    return { order, isExisting: false };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const raceWinner = await repo.findByIdempotencyKey(data.idempotencyKey);
+      if (raceWinner) {
+        return { order: raceWinner, isExisting: true };
+      }
+    }
+    throw error;
+  }
 };
 
 export const updateStatus = async (

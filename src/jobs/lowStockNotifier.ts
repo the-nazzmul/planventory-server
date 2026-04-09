@@ -8,16 +8,18 @@ export const checkLowStock = async (): Promise<void> => {
       where: { key: 'low_stock_threshold' },
     });
 
-    const threshold = thresholdSetting
+    const globalThreshold = thresholdSetting
       ? (typeof thresholdSetting.value === 'number' ? thresholdSetting.value : 10)
       : 10;
 
-    const lowStockVariants = await prisma.productVariant.findMany({
-      where: {
-        stock: { lte: prisma.productVariant.fields.lowStockAlert as never },
-      },
-      include: { product: { select: { id: true, name: true, sku: true } } },
-    });
+    const lowStockVariants = await prisma.$queryRaw<
+      { id: string; sku: string; stock: number; lowStockAlert: number; productName: string }[]
+    >`
+      SELECT pv.id, pv.sku, pv.stock, pv."lowStockAlert", p.name AS "productName"
+      FROM "ProductVariant" pv
+      JOIN "Product" p ON pv."productId" = p.id
+      WHERE pv.stock <= pv."lowStockAlert"
+    `;
 
     if (lowStockVariants.length === 0) {
       logger.info('Low stock check: no variants below threshold');
@@ -32,11 +34,11 @@ export const checkLowStock = async (): Promise<void> => {
 
     for (const webhook of webhooks) {
       await dispatchWebhook(webhook.url, webhook.secret, 'STOCK_LOW', {
-        threshold,
+        globalThreshold,
         variants: lowStockVariants.map((v) => ({
           id: v.id,
           sku: v.sku,
-          productName: v.product.name,
+          productName: v.productName,
           stock: v.stock,
           lowStockAlert: v.lowStockAlert,
         })),

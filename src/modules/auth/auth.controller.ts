@@ -57,7 +57,7 @@ export const logoutHandler = async (req: Request, res: Response, next: NextFunct
       throw new AppError(401, 'MISSING_REFRESH_TOKEN', 'Refresh token cookie missing');
     }
 
-    await logout(rawToken, req.user.id);
+    await logout(rawToken, req.user.id, req.ip, req.get('user-agent'));
 
     res.clearCookie('refreshToken', cookieOptions);
     sendSuccess(res, { loggedOut: true });
@@ -76,7 +76,7 @@ export const changePasswordHandler = async (
       throw new AppError(401, 'UNAUTHENTICATED', 'Authentication required');
     }
 
-    await changePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+    await changePassword(req.user.id, req.body.currentPassword, req.body.newPassword, req.ip, req.get('user-agent'));
 
     sendSuccess(res, { changed: true });
   } catch (error) {
