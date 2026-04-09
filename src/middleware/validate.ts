@@ -22,8 +22,14 @@ export const validate = (schema: ZodTypeAny) => {
     };
 
     if (validated.body !== undefined) req.body = validated.body;
-    if (validated.query !== undefined) Object.assign(req.query, validated.query);
-    if (validated.params !== undefined) Object.assign(req.params, validated.params as Record<string, string>);
+    if (validated.query !== undefined) {
+      const q = validated.query;
+      Object.defineProperty(req, 'query', { configurable: true, enumerable: true, get: () => q });
+    }
+    if (validated.params !== undefined) {
+      const p = validated.params as Record<string, string>;
+      Object.defineProperty(req, 'params', { configurable: true, enumerable: true, get: () => p });
+    }
 
     next();
   };

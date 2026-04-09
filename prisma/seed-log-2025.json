@@ -1,0 +1,46 @@
+{
+  "seededAt": "2026-04-09T17:31:48.351Z",
+  "year": 2025,
+  "users": [
+    "admin@planventory.com",
+    "manager@planventory.com",
+    "warehouse@planventory.com"
+  ],
+  "categories": [
+    "Electronics",
+    "Office Supplies",
+    "Packaging"
+  ],
+  "brands": [
+    "Planventory Essentials",
+    "Northwind Tools"
+  ],
+  "variants": [
+    "PV-LAP-2025-01-BLK",
+    "PV-CHAIR-2025-01-GRY",
+    "PV-BOX-2025-01-M"
+  ],
+  "suppliers": [
+    "Alpha Source Traders",
+    "Beta Distribution House"
+  ],
+  "ordersInserted": [
+    "ORD-2025-0001",
+    "ORD-2025-0002",
+    "ORD-2025-0003"
+  ],
+  "expenseRefs": [
+    "EXP-2025-01",
+    "EXP-2025-02",
+    "EXP-2025-03",
+    "EXP-2025-04",
+    "EXP-2025-05",
+    "EXP-2025-06",
+    "EXP-2025-07",
+    "EXP-2025-08",
+    "EXP-2025-09",
+    "EXP-2025-10",
+    "EXP-2025-11",
+    "EXP-2025-12"
+  ]
+}
