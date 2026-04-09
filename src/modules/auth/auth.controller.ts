@@ -1,0 +1,85 @@
+import type { NextFunction, Request, Response } from 'express';
+import { AppError } from '../../shared/errors/AppError.js';
+import { sendSuccess } from '../../shared/utils/response.js';
+import { changePassword, login, logout, refresh } from './auth.service.js';
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'strict' as const,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+};
+
+export const loginHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const result = await login(req.body.email, req.body.password, req.ip, req.get('user-agent'));
+
+    res.cookie('refreshToken', result.refreshToken, cookieOptions);
+    sendSuccess(
+      res,
+      {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+      200,
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const refreshHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const rawToken = req.cookies?.refreshToken as string | undefined;
+
+    if (!rawToken) {
+      throw new AppError(401, 'MISSING_REFRESH_TOKEN', 'Refresh token cookie missing');
+    }
+
+    const result = await refresh(rawToken, req.ip, req.get('user-agent'));
+
+    res.cookie('refreshToken', result.refreshToken, cookieOptions);
+    sendSuccess(res, { accessToken: result.accessToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logoutHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const rawToken = req.cookies?.refreshToken as string | undefined;
+
+    if (!rawToken || !req.user) {
+      throw new AppError(401, 'MISSING_REFRESH_TOKEN', 'Refresh token cookie missing');
+    }
+
+    await logout(rawToken, req.user.id);
+
+    res.clearCookie('refreshToken', cookieOptions);
+    sendSuccess(res, { loggedOut: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePasswordHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new AppError(401, 'UNAUTHENTICATED', 'Authentication required');
+    }
+
+    await changePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+
+    sendSuccess(res, { changed: true });
+  } catch (error) {
+    next(error);
+  }
+};

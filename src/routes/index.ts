@@ -1,0 +1,34 @@
+import { Router } from 'express';
+import { authRouter } from '../modules/auth/auth.routes.js';
+import { brandsRouter } from '../modules/brands/brands.routes.js';
+import { categoriesRouter } from '../modules/categories/categories.routes.js';
+import { expensesRouter } from '../modules/expenses/expenses.routes.js';
+import { financeRouter } from '../modules/finance/finance.routes.js';
+import { healthRouter } from '../modules/health/health.routes.js';
+import { ordersRouter } from '../modules/orders/orders.routes.js';
+import { productsRouter } from '../modules/products/products.routes.js';
+import { purchaseOrdersRouter } from '../modules/purchase-orders/purchase-orders.routes.js';
+import { returnsRouter } from '../modules/returns/returns.routes.js';
+import { settingsRouter } from '../modules/settings/settings.routes.js';
+import { stockMovementsRouter } from '../modules/stock-movements/stock-movements.routes.js';
+import { suppliersRouter } from '../modules/suppliers/suppliers.routes.js';
+import { usersRouter } from '../modules/users/users.routes.js';
+import { webhooksRouter } from '../modules/webhooks/webhooks.routes.js';
+
+export const apiRouter = Router();
+
+apiRouter.use('/health', healthRouter);
+apiRouter.use('/auth', authRouter);
+apiRouter.use('/categories', categoriesRouter);
+apiRouter.use('/brands', brandsRouter);
+apiRouter.use('/products', productsRouter);
+apiRouter.use('/stock-movements', stockMovementsRouter);
+apiRouter.use('/suppliers', suppliersRouter);
+apiRouter.use('/purchase-orders', purchaseOrdersRouter);
+apiRouter.use('/orders', ordersRouter);
+apiRouter.use('/returns', returnsRouter);
+apiRouter.use('/expenses', expensesRouter);
+apiRouter.use('/finance', financeRouter);
+apiRouter.use('/settings', settingsRouter);
+apiRouter.use('/users', usersRouter);
+apiRouter.use('/webhooks', webhooksRouter);

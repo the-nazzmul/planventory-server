@@ -1,0 +1,49 @@
+import type { NextFunction, Request, Response } from 'express';
+import { param } from '../../shared/utils/params.js';
+import { sendSuccess } from '../../shared/utils/response.js';
+import * as service from './users.service.js';
+
+export const getAllHandler = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const users = await service.getAll();
+    sendSuccess(res, users);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getByIdHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const user = await service.getById(param(req.params.id));
+    sendSuccess(res, user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const user = await service.create(req.body);
+    sendSuccess(res, user, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const user = await service.update(param(req.params.id), req.body);
+    sendSuccess(res, user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await service.remove(param(req.params.id));
+    sendSuccess(res, { deleted: true });
+  } catch (error) {
+    next(error);
+  }
+};
