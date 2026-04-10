@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../../shared/errors/AppError.js';
 import { getPresignedUploadUrl } from '../../lib/s3.js';
+import { invalidateCacheNamespace, withCache } from '../../lib/cache.js';
 import { buildPaginationMeta } from '../../shared/utils/pagination.js';
 import * as repo from './products.repository.js';
 
@@ -45,8 +46,10 @@ export const getAll = async (filters: {
   brandId?: string;
   isActive?: boolean;
 }) => {
-  const { items, total } = await repo.findAll(filters);
-  return buildPaginationMeta(items, filters.limit, total);
+  return withCache('products:list', 45, [filters], async () => {
+    const { items, total } = await repo.findAll(filters);
+    return buildPaginationMeta(items, filters.limit, total);
+  });
 };
 
 export const getById = async (id: string) => {
@@ -63,7 +66,7 @@ export const create = async (data: CreateProductInput) => {
     ? data.name.toUpperCase().replace(/\s+/g, '-').slice(0, 20)
     : data.name.toUpperCase().replace(/\s+/g, '-').slice(0, 20);
 
-  return repo.create({
+  const created = await repo.create({
     name: data.name,
     sku: `${sku}-${randomBytes(3).toString('hex').toUpperCase()}`,
     slug,
@@ -85,6 +88,13 @@ export const create = async (data: CreateProductInput) => {
       dimensions: v.dimensions ? (v.dimensions as Prisma.InputJsonValue) : Prisma.JsonNull,
     })),
   });
+  await Promise.all([
+    invalidateCacheNamespace('products:list'),
+    invalidateCacheNamespace('stock-movements:list'),
+    invalidateCacheNamespace('finance:overview'),
+    invalidateCacheNamespace('finance:reports'),
+  ]);
+  return created;
 };
 
 export const update = async (id: string, data: Record<string, unknown>) => {
@@ -101,12 +111,22 @@ export const update = async (id: string, data: Record<string, unknown>) => {
   if (data.tags !== undefined) updateData.tags = data.tags;
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-  return repo.update(id, updateData);
+  const updated = await repo.update(id, updateData);
+  await Promise.all([
+    invalidateCacheNamespace('products:list'),
+    invalidateCacheNamespace('finance:overview'),
+  ]);
+  return updated;
 };
 
 export const softDelete = async (id: string) => {
   await getById(id);
-  return repo.softDelete(id);
+  const deleted = await repo.softDelete(id);
+  await Promise.all([
+    invalidateCacheNamespace('products:list'),
+    invalidateCacheNamespace('finance:overview'),
+  ]);
+  return deleted;
 };
 
 export const addVariant = async (
@@ -126,7 +146,7 @@ export const addVariant = async (
   },
 ) => {
   await getById(productId);
-  return repo.addVariant(productId, {
+  const variant = await repo.addVariant(productId, {
     productId,
     sku: data.sku,
     size: data.size ?? null,
@@ -140,6 +160,12 @@ export const addVariant = async (
     weight: data.weight ?? null,
     dimensions: data.dimensions ? (data.dimensions as Prisma.InputJsonValue) : Prisma.JsonNull,
   });
+  await Promise.all([
+    invalidateCacheNamespace('products:list'),
+    invalidateCacheNamespace('stock-movements:list'),
+    invalidateCacheNamespace('finance:overview'),
+  ]);
+  return variant;
 };
 
 export const updateVariant = async (variantId: string, data: Record<string, unknown>) => {
@@ -147,7 +173,12 @@ export const updateVariant = async (variantId: string, data: Record<string, unkn
   if (!variant) {
     throw new AppError(404, 'VARIANT_NOT_FOUND', 'Product variant not found');
   }
-  return repo.updateVariant(variantId, data);
+  const updated = await repo.updateVariant(variantId, data);
+  await Promise.all([
+    invalidateCacheNamespace('products:list'),
+    invalidateCacheNamespace('finance:overview'),
+  ]);
+  return updated;
 };
 
 export const updateStock = async (
@@ -161,7 +192,15 @@ export const updateStock = async (
   if (!variant) {
     throw new AppError(404, 'VARIANT_NOT_FOUND', 'Product variant not found');
   }
-  return repo.updateStock(variantId, quantity, reason, performedBy, notes);
+  const updated = await repo.updateStock(variantId, quantity, reason, performedBy, notes);
+  await Promise.all([
+    invalidateCacheNamespace('products:list'),
+    invalidateCacheNamespace('stock-movements:list'),
+    invalidateCacheNamespace('orders:list'),
+    invalidateCacheNamespace('finance:overview'),
+    invalidateCacheNamespace('finance:reports'),
+  ]);
+  return updated;
 };
 
 export const getPresignedImageUrl = async (productId: string, filename: string, contentType: string) => {

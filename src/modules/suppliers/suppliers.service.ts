@@ -1,8 +1,12 @@
 import type { Prisma } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError.js';
+import { buildPaginationMeta } from '../../shared/utils/pagination.js';
 import * as repo from './suppliers.repository.js';
 
-export const getAll = () => repo.findAll();
+export const getAll = async (filters: { cursor?: string; limit: number; search?: string }) => {
+  const { items, total } = await repo.findAll(filters);
+  return buildPaginationMeta(items, filters.limit, total);
+};
 
 export const getById = async (id: string) => {
   const supplier = await repo.findById(id);

@@ -10,13 +10,13 @@ import {
   removeHandler,
   updateHandler,
 } from './categories.controller.js';
-import { createCategorySchema, updateCategorySchema } from './categories.schema.js';
+import { createCategorySchema, getCategoriesQuerySchema, updateCategorySchema } from './categories.schema.js';
 
 export const categoriesRouter = Router();
 
 categoriesRouter.use(authenticate, authorize('SUPER_ADMIN', 'MANAGER'));
 
-categoriesRouter.get('/', getAllHandler);
+categoriesRouter.get('/', validate(getCategoriesQuerySchema), getAllHandler);
 categoriesRouter.get('/:id', validate(idParamSchema), getByIdHandler);
 categoriesRouter.post('/', validate(createCategorySchema), createHandler);
 categoriesRouter.patch('/:id', validate(updateCategorySchema), updateHandler);

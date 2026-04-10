@@ -1,4 +1,5 @@
 import * as repo from './finance.repository.js';
+import { withCache } from '../../lib/cache.js';
 
 interface MonthlyReport {
   month: string;
@@ -8,28 +9,29 @@ interface MonthlyReport {
 }
 
 export const getOverview = async () => {
-  const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+  return withCache('finance:overview', 90, [], async () => {
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-  const [
-    totalRevenue,
-    thisMonthRevenue,
-    lastMonthRevenue,
-    cogsResult,
-    expenseTotal,
-    expensesByCategory,
-    orderCounts,
-  ] = await Promise.all([
-    repo.aggregateDeliveredRevenue(),
-    repo.aggregateDeliveredRevenue({ gte: thisMonthStart }),
-    repo.aggregateDeliveredRevenue({ gte: lastMonthStart, lte: lastMonthEnd }),
-    repo.aggregateCogs(),
-    repo.aggregateExpenses(),
-    repo.groupExpensesByCategory(),
-    repo.groupOrdersByStatus(),
-  ]);
+    const [
+      totalRevenue,
+      thisMonthRevenue,
+      lastMonthRevenue,
+      cogsResult,
+      expenseTotal,
+      expensesByCategory,
+      orderCounts,
+    ] = await Promise.all([
+      repo.aggregateDeliveredRevenue(),
+      repo.aggregateDeliveredRevenue({ gte: thisMonthStart }),
+      repo.aggregateDeliveredRevenue({ gte: lastMonthStart, lte: lastMonthEnd }),
+      repo.aggregateCogs(),
+      repo.aggregateExpenses(),
+      repo.groupExpensesByCategory(),
+      repo.groupOrdersByStatus(),
+    ]);
 
   const revenue = {
     total: totalRevenue._sum.totalAmount ?? 0,
@@ -50,30 +52,32 @@ export const getOverview = async () => {
 
   const orderCountMap = new Map(orderCounts.map((o) => [o.status, o._count]));
 
-  return {
-    revenue,
-    cogs,
-    grossProfit,
-    grossMargin,
-    expenses: {
-      total: totalExpenses,
-      byCategory,
-    },
-    netProfit,
-    orders: {
-      total: orderCounts.reduce((s, o) => s + o._count, 0),
-      pending: orderCountMap.get('PENDING') ?? 0,
-      delivered: orderCountMap.get('DELIVERED') ?? 0,
-      cancelled: orderCountMap.get('CANCELLED') ?? 0,
-    },
-  };
+    return {
+      revenue,
+      cogs,
+      grossProfit,
+      grossMargin,
+      expenses: {
+        total: totalExpenses,
+        byCategory,
+      },
+      netProfit,
+      orders: {
+        total: orderCounts.reduce((s, o) => s + o._count, 0),
+        pending: orderCountMap.get('PENDING') ?? 0,
+        delivered: orderCountMap.get('DELIVERED') ?? 0,
+        cancelled: orderCountMap.get('CANCELLED') ?? 0,
+      },
+    };
+  });
 };
 
 export const getMonthlyReport = async (year: number): Promise<MonthlyReport[]> => {
-  const [revenueData, expensesData] = await Promise.all([
-    repo.revenueByMonth(year),
-    repo.expensesByMonth(year),
-  ]);
+  return withCache('finance:reports', 120, [year], async () => {
+    const [revenueData, expensesData] = await Promise.all([
+      repo.revenueByMonth(year),
+      repo.expensesByMonth(year),
+    ]);
 
   const months = new Map<string, { revenue: number; expenses: number }>();
 
@@ -102,5 +106,6 @@ export const getMonthlyReport = async (year: number): Promise<MonthlyReport[]> =
     });
   }
 
-  return result;
+    return result;
+  });
 };

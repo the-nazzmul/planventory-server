@@ -10,13 +10,13 @@ import {
   softDeleteHandler,
   updateHandler,
 } from './suppliers.controller.js';
-import { createSupplierSchema, updateSupplierSchema } from './suppliers.schema.js';
+import { createSupplierSchema, getSuppliersQuerySchema, updateSupplierSchema } from './suppliers.schema.js';
 
 export const suppliersRouter = Router();
 
 suppliersRouter.use(authenticate, authorize('SUPER_ADMIN', 'MANAGER'));
 
-suppliersRouter.get('/', getAllHandler);
+suppliersRouter.get('/', validate(getSuppliersQuerySchema), getAllHandler);
 suppliersRouter.get('/:id', validate(idParamSchema), getByIdHandler);
 suppliersRouter.post('/', validate(createSupplierSchema), createHandler);
 suppliersRouter.patch('/:id', validate(updateSupplierSchema), updateHandler);

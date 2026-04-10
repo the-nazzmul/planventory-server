@@ -26,3 +26,13 @@ export const updateSupplierSchema = z.object({
   query: z.object({}).passthrough(),
   params: z.object({ id: z.string() }),
 });
+
+export const getSuppliersQuerySchema = z.object({
+  body: z.object({}).passthrough(),
+  params: z.object({}).passthrough(),
+  query: z.object({
+    cursor: z.string().optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().optional(),
+  }),
+});

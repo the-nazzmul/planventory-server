@@ -1,10 +1,33 @@
 import { prisma } from '../../config/prisma.js';
 
-export const findAll = () => {
-  return prisma.brand.findMany({
-    include: { _count: { select: { products: true } } },
-    orderBy: { name: 'asc' },
-  });
+type BrandFilters = {
+  cursor?: string;
+  limit: number;
+  search?: string;
+};
+
+export const findAll = async (filters: BrandFilters) => {
+  const where = filters.search
+    ? {
+        OR: [
+          { name: { contains: filters.search, mode: 'insensitive' as const } },
+          { slug: { contains: filters.search, mode: 'insensitive' as const } },
+        ],
+      }
+    : {};
+
+  const [items, total] = await Promise.all([
+    prisma.brand.findMany({
+      where,
+      include: { _count: { select: { products: true } } },
+      orderBy: { name: 'asc' },
+      take: filters.limit + 1,
+      ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
+    }),
+    prisma.brand.count({ where }),
+  ]);
+
+  return { items, total };
 };
 
 export const findById = (id: string) => {

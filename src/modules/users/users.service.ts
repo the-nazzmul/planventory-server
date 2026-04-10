@@ -1,9 +1,13 @@
 import type { Role } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError.js';
 import { hashPassword } from '../../shared/utils/crypto.js';
+import { buildPaginationMeta } from '../../shared/utils/pagination.js';
 import * as repo from './users.repository.js';
 
-export const getAll = () => repo.findAll();
+export const getAll = async (filters: { cursor?: string; limit: number; search?: string }) => {
+  const { items, total } = await repo.findAll(filters);
+  return buildPaginationMeta(items, filters.limit, total);
+};
 
 export const getById = async (id: string) => {
   const user = await repo.findById(id);

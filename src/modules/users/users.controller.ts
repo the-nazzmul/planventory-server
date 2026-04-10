@@ -3,10 +3,10 @@ import { param } from '../../shared/utils/params.js';
 import { sendSuccess } from '../../shared/utils/response.js';
 import * as service from './users.service.js';
 
-export const getAllHandler = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAllHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const users = await service.getAll();
-    sendSuccess(res, users);
+    const result = await service.getAll(req.query as never);
+    sendSuccess(res, result.data, 200, result.meta);
   } catch (error) {
     next(error);
   }

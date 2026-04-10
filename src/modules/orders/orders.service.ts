@@ -2,6 +2,7 @@ import type { OrderStatus } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../shared/errors/AppError.js';
+import { invalidateCacheNamespace, withCache } from '../../lib/cache.js';
 import { generateOrderNumber } from '../../shared/utils/orderNumber.js';
 import { buildPaginationMeta } from '../../shared/utils/pagination.js';
 import { validateTransition } from './orderStateMachine.js';
@@ -21,8 +22,10 @@ interface CreateOrderInput {
 }
 
 export const getAll = async (filters: Parameters<typeof repo.findAll>[0]) => {
-  const { items, total } = await repo.findAll(filters);
-  return buildPaginationMeta(items, filters.limit, total);
+  return withCache('orders:list', 45, [filters], async () => {
+    const { items, total } = await repo.findAll(filters);
+    return buildPaginationMeta(items, filters.limit, total);
+  });
 };
 
 export const getById = async (id: string) => {
@@ -122,6 +125,13 @@ export const create = async (data: CreateOrderInput, processedBy?: string): Prom
 
     return order;
     });
+    await Promise.all([
+      invalidateCacheNamespace('orders:list'),
+      invalidateCacheNamespace('products:list'),
+      invalidateCacheNamespace('stock-movements:list'),
+      invalidateCacheNamespace('finance:overview'),
+      invalidateCacheNamespace('finance:reports'),
+    ]);
     return { order, isExisting: false };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -153,7 +163,7 @@ export const updateStatus = async (
   }
 
   if (status === 'CANCELLED') {
-    return prisma.$transaction(async (tx) => {
+    const cancelled = await prisma.$transaction(async (tx) => {
       const items = await tx.orderItem.findMany({ where: { orderId: id }, include: { variant: true } });
 
       for (const item of items) {
@@ -177,9 +187,17 @@ export const updateStatus = async (
         include: { items: { include: { variant: true } } },
       });
     });
+    await Promise.all([
+      invalidateCacheNamespace('orders:list'),
+      invalidateCacheNamespace('products:list'),
+      invalidateCacheNamespace('stock-movements:list'),
+      invalidateCacheNamespace('finance:overview'),
+      invalidateCacheNamespace('finance:reports'),
+    ]);
+    return cancelled;
   }
 
-  return prisma.order.update({
+  const updated = await prisma.order.update({
     where: { id },
     data: {
       status,
@@ -188,4 +206,10 @@ export const updateStatus = async (
     },
     include: { items: { include: { variant: true } } },
   });
+  await Promise.all([
+    invalidateCacheNamespace('orders:list'),
+    invalidateCacheNamespace('finance:overview'),
+    invalidateCacheNamespace('finance:reports'),
+  ]);
+  return updated;
 };

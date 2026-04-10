@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
+import { invalidateCacheNamespace, withCache } from '../../lib/cache.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { buildPaginationMeta } from '../../shared/utils/pagination.js';
 import * as repo from './returns.repository.js';
@@ -13,8 +14,10 @@ interface CreateReturnInput {
 }
 
 export const getAll = async (filters: Parameters<typeof repo.findAll>[0]) => {
-  const { items, total } = await repo.findAll(filters);
-  return buildPaginationMeta(items, filters.limit, total);
+  return withCache('returns:list', 45, [filters], async () => {
+    const { items, total } = await repo.findAll(filters);
+    return buildPaginationMeta(items, filters.limit, total);
+  });
 };
 
 export const getById = async (id: string) => {
@@ -57,7 +60,7 @@ export const processReturn = async (data: CreateReturnInput, processedBy: string
     }
   }
 
-  return prisma.$transaction(async (tx) => {
+  const returnRecord = await prisma.$transaction(async (tx) => {
     const returnRecord = await tx.return.create({
       data: {
         orderId: data.orderId,
@@ -93,4 +96,13 @@ export const processReturn = async (data: CreateReturnInput, processedBy: string
 
     return returnRecord;
   });
+  await Promise.all([
+    invalidateCacheNamespace('returns:list'),
+    invalidateCacheNamespace('orders:list'),
+    invalidateCacheNamespace('products:list'),
+    invalidateCacheNamespace('stock-movements:list'),
+    invalidateCacheNamespace('finance:overview'),
+    invalidateCacheNamespace('finance:reports'),
+  ]);
+  return returnRecord;
 };

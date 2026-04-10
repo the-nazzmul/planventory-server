@@ -1,6 +1,7 @@
 import slugify from 'slugify';
 import { randomBytes } from 'node:crypto';
 import { AppError } from '../../shared/errors/AppError.js';
+import { buildPaginationMeta } from '../../shared/utils/pagination.js';
 import * as repo from './brands.repository.js';
 
 const generateSlug = async (name: string): Promise<string> => {
@@ -12,7 +13,10 @@ const generateSlug = async (name: string): Promise<string> => {
   return slug;
 };
 
-export const getAll = () => repo.findAll();
+export const getAll = async (filters: { cursor?: string; limit: number; search?: string }) => {
+  const { items, total } = await repo.findAll(filters);
+  return buildPaginationMeta(items, filters.limit, total);
+};
 
 export const getById = async (id: string) => {
   const brand = await repo.findById(id);
