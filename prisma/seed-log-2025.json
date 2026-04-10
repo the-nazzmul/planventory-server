@@ -1,46 +1,46 @@
 {
-  "seededAt": "2026-04-09T17:31:48.351Z",
+  "seededAt": "2026-04-09T18:38:05.283Z",
   "year": 2025,
+  "totals": {
+    "products": 26,
+    "variants": 31,
+    "orders": 100,
+    "returns": 8,
+    "expenses": 52,
+    "purchaseOrders": 10,
+    "stockMovements": 49,
+    "suppliers": 6,
+    "categories": 8,
+    "brands": 6
+  },
+  "financials": {
+    "grossRevenue": "$125,099.28",
+    "totalExpenses": "$26,987.74",
+    "totalRefunds": "$1,335",
+    "netProfit": "$96,776.54"
+  },
   "users": [
     "admin@planventory.com",
     "manager@planventory.com",
-    "warehouse@planventory.com"
+    "warehouse@planventory.com",
+    "staff@planventory.com"
   ],
   "categories": [
     "Electronics",
+    "Furniture",
     "Office Supplies",
-    "Packaging"
+    "Packaging",
+    "Cleaning",
+    "Tools & Hardware",
+    "Safety",
+    "Storage"
   ],
   "brands": [
     "Planventory Essentials",
-    "Northwind Tools"
-  ],
-  "variants": [
-    "PV-LAP-2025-01-BLK",
-    "PV-CHAIR-2025-01-GRY",
-    "PV-BOX-2025-01-M"
-  ],
-  "suppliers": [
-    "Alpha Source Traders",
-    "Beta Distribution House"
-  ],
-  "ordersInserted": [
-    "ORD-2025-0001",
-    "ORD-2025-0002",
-    "ORD-2025-0003"
-  ],
-  "expenseRefs": [
-    "EXP-2025-01",
-    "EXP-2025-02",
-    "EXP-2025-03",
-    "EXP-2025-04",
-    "EXP-2025-05",
-    "EXP-2025-06",
-    "EXP-2025-07",
-    "EXP-2025-08",
-    "EXP-2025-09",
-    "EXP-2025-10",
-    "EXP-2025-11",
-    "EXP-2025-12"
+    "Northwind Tools",
+    "Summit Office",
+    "CleanPro",
+    "BoxCraft",
+    "TechEdge"
   ]
 }

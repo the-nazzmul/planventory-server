@@ -3,3 +3,6 @@ dist
 .env
 inventory-backend-blueprint.md
 *.log
+PLANVENTORY-ROADMAP.md
+../PLANVENTORY-ROADMAP.md
+*.plan.md

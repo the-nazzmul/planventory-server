@@ -4,12 +4,17 @@ import { AppError } from '../../shared/errors/AppError.js';
 import { sendSuccess } from '../../shared/utils/response.js';
 import { changePassword, login, logout, refresh } from './auth.service.js';
 
-const cookieOptions = () => ({
-  httpOnly: true,
-  secure: true,
-  sameSite: 'strict' as const,
-  maxAge: env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
-});
+const cookieOptions = () => {
+  const isProduction = env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    // Cross-site SPA -> API requests require SameSite=None, which also requires Secure=true.
+    secure: isProduction,
+    sameSite: isProduction ? ('none' as const) : ('lax' as const),
+    maxAge: env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
+  };
+};
 
 export const loginHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
