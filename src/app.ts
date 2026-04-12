@@ -7,14 +7,38 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { apiRouter } from './routes/index.js';
 
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/$/, '');
+}
+
 export const createApp = (): Express => {
   const app = express();
 
-  app.use(helmet());
+  const allowedOrigins = env.ALLOWED_ORIGINS.map(normalizeOrigin);
+
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(
     cors({
-      origin: env.ALLOWED_ORIGINS,
+      origin(origin, callback) {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        const normalized = normalizeOrigin(origin);
+        const allowed = allowedOrigins.some(
+          (o) => o === normalized || o.toLowerCase() === normalized.toLowerCase(),
+        );
+        callback(null, allowed);
+      },
       credentials: true,
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+      optionsSuccessStatus: 204,
+      maxAge: 86_400,
     }),
   );
   app.use(cookieParser());

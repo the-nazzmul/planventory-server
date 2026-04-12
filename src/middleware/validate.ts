@@ -2,6 +2,12 @@ import type { NextFunction, Request, Response } from 'express';
 import type { ZodTypeAny } from 'zod';
 import { sendError } from '../shared/utils/response.js';
 
+/**
+ * Express 5 exposes `req.params` / `req.query` in a way that breaks if we replace
+ * them with `Object.defineProperty` — the router then throws
+ * "Cannot set property params of #<IncomingMessage> which has only a getter".
+ * Merge validated values into the existing objects instead.
+ */
 export const validate = (schema: ZodTypeAny) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const result = schema.safeParse({
@@ -22,13 +28,23 @@ export const validate = (schema: ZodTypeAny) => {
     };
 
     if (validated.body !== undefined) req.body = validated.body;
+
     if (validated.query !== undefined) {
-      const q = validated.query;
-      Object.defineProperty(req, 'query', { configurable: true, enumerable: true, get: () => q });
+      const q = validated.query as Record<string, unknown>;
+      const target = req.query as Record<string, unknown>;
+      for (const key of Object.keys(target)) {
+        if (!(key in q)) delete target[key];
+      }
+      Object.assign(target, q);
     }
+
     if (validated.params !== undefined) {
       const p = validated.params as Record<string, string>;
-      Object.defineProperty(req, 'params', { configurable: true, enumerable: true, get: () => p });
+      const target = req.params as Record<string, string>;
+      for (const key of Object.keys(target)) {
+        if (!(key in p)) delete target[key];
+      }
+      Object.assign(target, p);
     }
 
     next();
