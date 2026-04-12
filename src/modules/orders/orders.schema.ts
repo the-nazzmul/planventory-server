@@ -41,6 +41,7 @@ export const getOrdersQuerySchema = z.object({
   query: z.object({
     status: z.enum(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']).optional(),
     customerEmail: z.string().optional(),
+    search: z.string().optional(),
     dateFrom: z.coerce.date().optional(),
     dateTo: z.coerce.date().optional(),
     cursor: z.string().optional(),

@@ -4,6 +4,7 @@ import { prisma } from '../../config/prisma.js';
 interface Filters {
   variantId?: string | undefined;
   productId?: string | undefined;
+  search?: string | undefined;
   reason?: StockMovementReason | undefined;
   dateFrom?: Date | undefined;
   dateTo?: Date | undefined;
@@ -12,16 +13,30 @@ interface Filters {
 }
 
 export const findAll = async (filters: Filters) => {
-  const where: Prisma.StockMovementWhereInput = {};
+  const parts: Prisma.StockMovementWhereInput[] = [];
 
-  if (filters.variantId) where.variantId = filters.variantId;
-  if (filters.productId) where.variant = { productId: filters.productId };
-  if (filters.reason) where.reason = filters.reason;
+  if (filters.variantId) parts.push({ variantId: filters.variantId });
+  if (filters.productId) parts.push({ variant: { productId: filters.productId } });
+  if (filters.reason) parts.push({ reason: filters.reason });
   if (filters.dateFrom || filters.dateTo) {
-    where.createdAt = {};
-    if (filters.dateFrom) where.createdAt.gte = filters.dateFrom;
-    if (filters.dateTo) where.createdAt.lte = filters.dateTo;
+    parts.push({
+      createdAt: {
+        ...(filters.dateFrom ? { gte: filters.dateFrom } : {}),
+        ...(filters.dateTo ? { lte: filters.dateTo } : {}),
+      },
+    });
   }
+  if (filters.search?.trim()) {
+    const q = filters.search.trim();
+    parts.push({
+      OR: [
+        { variant: { sku: { contains: q, mode: 'insensitive' } } },
+        { variant: { product: { name: { contains: q, mode: 'insensitive' } } } },
+      ],
+    });
+  }
+
+  const where: Prisma.StockMovementWhereInput = parts.length > 0 ? { AND: parts } : {};
 
   const total = await prisma.stockMovement.count({ where });
 

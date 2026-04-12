@@ -3,6 +3,7 @@ import { prisma } from '../../config/prisma.js';
 
 interface FindAllFilters {
   orderId?: string | undefined;
+  search?: string | undefined;
   cursor?: string | undefined;
   limit: number;
 }
@@ -10,6 +11,13 @@ interface FindAllFilters {
 export const findAll = async (filters: FindAllFilters) => {
   const where: Prisma.ReturnWhereInput = {};
   if (filters.orderId) where.orderId = filters.orderId;
+  if (filters.search?.trim()) {
+    const q = filters.search.trim();
+    where.OR = [
+      { reason: { contains: q, mode: 'insensitive' } },
+      { order: { orderNumber: { contains: q, mode: 'insensitive' } } },
+    ];
+  }
 
   const total = await prisma.return.count({ where });
 

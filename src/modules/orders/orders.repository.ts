@@ -4,6 +4,7 @@ import { prisma } from '../../config/prisma.js';
 interface FindAllFilters {
   status?: OrderStatus | undefined;
   customerEmail?: string | undefined;
+  search?: string | undefined;
   dateFrom?: Date | undefined;
   dateTo?: Date | undefined;
   cursor?: string | undefined;
@@ -11,15 +12,30 @@ interface FindAllFilters {
 }
 
 export const findAll = async (filters: FindAllFilters) => {
-  const where: Prisma.OrderWhereInput = {};
+  const parts: Prisma.OrderWhereInput[] = [];
 
-  if (filters.status) where.status = filters.status;
-  if (filters.customerEmail) where.customerEmail = filters.customerEmail;
+  if (filters.status) parts.push({ status: filters.status });
+  if (filters.customerEmail) parts.push({ customerEmail: filters.customerEmail });
   if (filters.dateFrom || filters.dateTo) {
-    where.createdAt = {};
-    if (filters.dateFrom) where.createdAt.gte = filters.dateFrom;
-    if (filters.dateTo) where.createdAt.lte = filters.dateTo;
+    parts.push({
+      createdAt: {
+        ...(filters.dateFrom ? { gte: filters.dateFrom } : {}),
+        ...(filters.dateTo ? { lte: filters.dateTo } : {}),
+      },
+    });
   }
+  if (filters.search?.trim()) {
+    const q = filters.search.trim();
+    parts.push({
+      OR: [
+        { orderNumber: { contains: q, mode: 'insensitive' } },
+        { customerName: { contains: q, mode: 'insensitive' } },
+        { customerEmail: { contains: q, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  const where: Prisma.OrderWhereInput = parts.length > 0 ? { AND: parts } : {};
 
   const total = await prisma.order.count({ where });
 

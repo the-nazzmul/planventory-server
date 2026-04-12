@@ -1,30 +1,15 @@
-import { appendFileSync } from 'node:fs';
-
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '../../config/env.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { sendSuccess } from '../../shared/utils/response.js';
 import { changePassword, login, logout, refresh } from './auth.service.js';
 
-const DEBUG_AGENT_LOG =
-  '/Users/nazmulhussain/web-dev/personal-projects/planventory/.cursor/debug-103bcd.log';
-
-function agentLog(payload: Record<string, unknown>): void {
-  try {
-    appendFileSync(
-      DEBUG_AGENT_LOG,
-      `${JSON.stringify({ sessionId: '103bcd', ...payload, timestamp: Date.now() })}\n`,
-    );
-  } catch {
-    // Log path may be unavailable on remote hosts
-  }
-}
-
 const cookieOptions = () => {
   const isProduction = env.NODE_ENV === 'production';
 
   return {
     httpOnly: true,
+    path: '/',
     // Cross-site SPA -> API requests require SameSite=None, which also requires Secure=true.
     secure: isProduction,
     sameSite: isProduction ? ('none' as const) : ('lax' as const),
@@ -55,17 +40,8 @@ export const refreshHandler = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const started = Date.now();
   try {
     const rawToken = req.cookies?.refreshToken as string | undefined;
-
-    agentLog({
-      runId: 'post-fix',
-      hypothesisId: 'B',
-      location: 'auth.controller.ts:refreshHandler',
-      message: 'refresh request',
-      data: { hasCookie: Boolean(rawToken) },
-    });
 
     if (!rawToken) {
       throw new AppError(401, 'MISSING_REFRESH_TOKEN', 'Refresh token cookie missing');
@@ -75,24 +51,7 @@ export const refreshHandler = async (
 
     res.cookie('refreshToken', result.refreshToken, cookieOptions());
     sendSuccess(res, { accessToken: result.accessToken, user: result.user });
-    agentLog({
-      runId: 'post-fix',
-      hypothesisId: 'B',
-      location: 'auth.controller.ts:refreshHandler',
-      message: 'refresh ok',
-      data: { ms: Date.now() - started },
-    });
   } catch (error) {
-    agentLog({
-      runId: 'post-fix',
-      hypothesisId: 'B',
-      location: 'auth.controller.ts:refreshHandler',
-      message: 'refresh error',
-      data: {
-        ms: Date.now() - started,
-        err: error instanceof Error ? error.message : 'unknown',
-      },
-    });
     next(error);
   }
 };

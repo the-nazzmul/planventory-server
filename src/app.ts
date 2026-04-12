@@ -4,7 +4,6 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { standardLimiter } from './middleware/rateLimiter.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { apiRouter } from './routes/index.js';
 
@@ -21,7 +20,6 @@ export const createApp = (): Express => {
   app.use(cookieParser());
   app.use(express.json({ limit: '10mb' }));
   app.use(requestLogger);
-  app.use(standardLimiter);
 
   app.use('/api/v1', apiRouter);
 

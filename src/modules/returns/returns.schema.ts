@@ -21,6 +21,7 @@ export const getReturnsQuerySchema = z.object({
   params: z.object({}).passthrough(),
   query: z.object({
     orderId: z.string().optional(),
+    search: z.string().optional(),
     cursor: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(100).default(20),
   }),

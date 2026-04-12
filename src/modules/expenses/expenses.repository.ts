@@ -3,6 +3,7 @@ import { prisma } from '../../config/prisma.js';
 
 interface FindAllFilters {
   category?: ExpenseCategory | undefined;
+  search?: string | undefined;
   dateFrom?: Date | undefined;
   dateTo?: Date | undefined;
   cursor?: string | undefined;
@@ -13,6 +14,9 @@ export const findAll = async (filters: FindAllFilters) => {
   const where: Prisma.ExpenseWhereInput = {};
 
   if (filters.category) where.category = filters.category;
+  if (filters.search?.trim()) {
+    where.description = { contains: filters.search.trim(), mode: 'insensitive' };
+  }
   if (filters.dateFrom || filters.dateTo) {
     where.date = {};
     if (filters.dateFrom) where.date.gte = filters.dateFrom;

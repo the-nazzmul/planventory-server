@@ -17,6 +17,7 @@ export const getExpensesQuerySchema = z.object({
   params: z.object({}).passthrough(),
   query: z.object({
     category: z.enum(['OPERATIONAL', 'INVENTORY', 'MARKETING', 'PAYROLL', 'UTILITIES', 'OTHER']).optional(),
+    search: z.string().optional(),
     dateFrom: z.coerce.date().optional(),
     dateTo: z.coerce.date().optional(),
     cursor: z.string().optional(),
