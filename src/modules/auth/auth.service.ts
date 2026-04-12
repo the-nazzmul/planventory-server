@@ -141,9 +141,16 @@ export const refresh = async (rawToken: string, ip?: string, userAgent?: string)
 
   await writeAudit(matched.userId, 'REFRESH_SUCCESS', matched.id, { ip, userAgent });
 
+  const u = matched.user;
   return {
     accessToken,
     refreshToken: newRefreshToken,
+    user: {
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+    },
   };
 };
 
